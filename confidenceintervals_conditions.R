@@ -13,11 +13,27 @@ dataclean<-dataclean[-which(grepl('NA',dataclean$treatment3)),]
 dataclean<-dataclean[-which(grepl('NA',dataclean$treatment4)),]
 
 
-#list = column name and conditions
 
+#BOOTDATA is our data but as done immediately above, you need to remove the NA's from our
+#treatment columns. 
+#INGROUPS are the treatment groups you want to look at, 1st 4 rows in the returned data
+#are mean and confidence intervals for these groups. Next 4 rows in returned data are
+#mean/CI for all other groups that are not excluded. Last 4 returned rows are the mean/CIs
+#for the difference between in groups and the other, not excluded groups.
+#EXCLUDEDGROUPS are entered the same way as ingroups and are those that will be removed 
+#from the ingroup/outgroup comparison. for example if we want to compare experts versus
+#non experts then we would want to exclude group 9, the control group
+#LISTCONDITIONS are variables and the variable values that we want to look. It requres list type data
+#where the names of the various list(s) are the variables(columns) in our data and the values
+#within the lists are the values want to select on. 
+#so pass in list(column name = "responses you want included", second column name = "responses 
+#for that variable that we are interested in", ect.) <-you can add more than one
+#value in a column by separating with '|'
+#BOOTNUM is the number of bootstrap samples to draw for creating confidence intervals
 
-condinterval<-function(bootdata,ingroups,listconditions=NA,bootnum){
+condinterval<-function(bootdata,ingroups,excludedgroups="zzz",listconditions=NA,bootnum){
   outcome<-rbind(rep(NA,12),rep(NA,12))
+  bootdata<-bootdata[-which(grepl(paste0(paste0(excludedgroups,sep = "|",collapse = ""),"zzz",collapse = ""),bootdata$group)),]
   for(i in 1:bootnum){
   temp<-bootdata[sample(1:nrow(bootdata),nrow(bootdata),replace = TRUE),]
   if(!is.na(listconditions)){
@@ -41,24 +57,27 @@ return(returnvalues)
 
 
 ####expert versus non-expert
-condinterval(dataclean[-which(grepl('9',dataclean$group)),],c(1,2,3,4),bootnum = 500)
+condinterval(dataclean,c(1,2,3,4),excludedgroups = c(9),bootnum = 500)
 
-###expert fact versus non-expert fact
-condinterval(dataclean[-which(grepl('9|3|4|7|8',dataclean$group)),],c(1,2),bootnum = 500)
+###expert fact versus non-expert fact, removed groups 3, 4, 7, 8 and 9 so it compares
+#groups 1 and 2 to groups 5 and 6
+condinterval(dataclean,c(1,2),c(9,3,4,7,8),bootnum = 500)
 
-###expert opinion versus non-expert opinion
-condinterval(dataclean[-which(grepl('9|1|2|5|6',dataclean$group)),],c(3,4),bootnum = 500)
+###expert opinion versus non-expert opinion, removes groups 1,2,5,6 and 9 so it compares
+#groups 3 and 4 to 7 and 8
+condinterval(dataclean,c(3,4),c(1,2,5,6,9),bootnum = 500)
 
 
-###########removing low attention subject (for example purposes only)
+###########removing low attention subject (for example purposes only, we need 
+#to consider low attention futher)
 
 ####expert versus non-expert
-condinterval(dataclean[-which(grepl('9',dataclean$group)),],c(1,2,3,4),bootnum = 500,listconditions = list(lowattention = '0'))
+condinterval(dataclean,c(1,2,3,4),c(9),bootnum = 500,listconditions = list(lowattention = '0'))
 
 ###expert fact versus non-expert fact
-condinterval(dataclean[-which(grepl('9|3|4|7|8',dataclean$group)),],c(1,2),bootnum = 500,listconditions = list(lowattention = '0'))
+condinterval(dataclean,c(1,2),c(3,4,7,8,9),bootnum = 500,listconditions = list(lowattention = '0'))
 
 ###expert opinion versus non-expert opinion
-condinterval(dataclean[-which(grepl('9|1|2|5|6',dataclean$group)),],c(3,4),bootnum = 500,listconditions = list(lowattention = '0'))
+condinterval(dataclean,c(3,4),c(1,2,5,6,9),bootnum = 500,listconditions = list(lowattention = '0'))
 
 
